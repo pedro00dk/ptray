@@ -150,12 +150,9 @@ def run_specification(specification):
 
 
 def test():
-    import json
+    import jsonc
     with open('./specs/disk.jsonc') as specification_file:
-        comment_matcher = re.compile(r'\s*//')
-        specification_text = ''.join(
-            line for line in specification_file.readlines() if comment_matcher.search(line) == None)
-    print(run_specification(json.loads(specification_text)))
+        print(run_specification(jsonc.loads(specification_file.read())))
 
 
 if __name__ == '__main__':
