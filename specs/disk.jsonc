@@ -1,0 +1,45 @@
+{
+    // specification name
+    "name": "disk",
+    // command run interval in seconds
+    "interval": 60,
+    // command to run (shall be split in a list) ex: df -BM -> ["df", "-BM"]
+    "command": [
+        "df",
+        "-BM"
+    ],
+    // filter options used to select relavant part of the command output (https://regex101.com/)
+    "filter": {
+        // regular expression for match and extract gorups the output data (uses python regular expression syntax)
+        "pattern": "^(?P<drive>/dev/sd[^\\s]+)\\s+(?P<blocks>\\d+)M\\s+(?P<used>\\d+)M\\s+(?P<available>\\d+)M\\s+(?P<use>\\d+)%\\s+(?P<mount>.+)$",
+        // regular expression flags
+        "flags": {
+            // ^ and $ match the start and end of a line (not of the entire output)
+            "multiline": true,
+            // dot (.) matches all characters, including start and end of lines
+            "dotall": false,
+            // case intensive search
+            "intensive": false,
+            // ignore the whitespaces characters of the regular expression (they are not used for matching)
+            "extended": false,
+            // special scaped characteres only match characters in ascii range (default is unicode range
+            "ascii": false
+        }
+    },
+    // split the found matchers from the filter process in pools that have the same key
+    "split": {
+        // the split pools common key, it shall be one of the pattern extracted pools
+        "key": "drive"
+    },
+    // Apply a function for each split group (the function shall be a python funciton)
+    "apply": {
+        // each key here is a group from the filter pattern
+        // the key used in split is not allowed here
+        // groups not used are removed
+        // the function argument is a list with the group of each match
+        // examples of possible ways to apply functions (reduce method is available)
+        "used": "lambda availables: sum((int(a) for a in availables))",
+        "available": "lambda availables: reduce(lambda acc, a: acc + int(a), availables, 0)",
+        "mount": "lambda mounts: mounts"
+    }
+}
