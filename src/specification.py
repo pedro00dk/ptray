@@ -62,9 +62,11 @@ def _build_filter_function(specification):
         'ascii': re.RegexFlag.ASCII
     }
     pattern = specification['filter']['pattern']
-    flags = reduce(lambda options, option: options | option,
-                   (flags_dict[option] for option, value in specification['filter']['flags'].items() if value),
-                   re.RegexFlag.UNICODE)
+    flags = reduce(
+        lambda options, option: options | option,
+        (flags_dict[option] for option, value in specification['filter']['flags'].items() if value),
+        re.RegexFlag.UNICODE
+    )
     filter_matcher = re.compile(pattern, flags)
     groups_dict = {index - 1: group for group, index in filter_matcher.groupindex.items()}
 
