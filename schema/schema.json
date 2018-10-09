@@ -34,15 +34,18 @@
                     "type": "null"
                 },
                 "lines": {
-                    "description": "Only the received lines will be extracted from the result, outputs a dict with the line indices as key and lines strings as values",
+                    "description": "Only the received lines will be extracted from the result, outputs a dict with the line indices as key and lines strings as values, if there are missing lines, the specification fails",
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "description": "The line indices to select, starting from 0, the indices should ve unique and contained in the command output size, otherwise, the specification fails",
+                        "type": "number",
+                        "minimum": 0
                     },
-                    "minItems": 1
+                    "minItems": 1,
+                    "uniqueItems": true
                 },
                 "match": {
-                    "description": "Search for matches in the command output with a python pattern (https://docs.python.org/3/library/re.html), outputs a dict with found order as key and matched strings as values",
+                    "description": "Search for matches in the command output with a python pattern (https://docs.python.org/3/library/re.html), outputs a dict with found order as key and matched strings as values, if matches nothing, the specification fails",
                     "type": "string"
                 }
             },
