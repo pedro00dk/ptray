@@ -20,6 +20,6 @@
     ],
     "tray": {
         "icon": "https://cdn1.iconfinder.com/data/icons/servers-database-8/60/database__server__storage__mainframe__datacenter-512.png",
-        "info": "lambda lines: '\\n'.join([f'{data["drive"]} - {data["used"]} - {data["mount"]}' for data in lines])"
+        "info": "lambda lines: '\\n'.join([f'{data[\"drive\"]} - {data[\"used\"]} - {data[\"mount\"]}' for data in lines])"
     }
 }
