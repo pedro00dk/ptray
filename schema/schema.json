@@ -94,6 +94,21 @@
                 "maxProperties": 2
             },
             "minItems": 1
+        },
+        "tray": {
+            "description": "The tray information to show the data",
+            "type": "object",
+            "properties": {
+                "icon": {
+                    "description": "The icon to show in the tray, this element should be an URI to an image",
+                    "type": "string",
+                    "format": "uri"
+                },
+                "info": {
+                    "description": "Function that produces the info output, should be a python lambda that receives the extracted data",
+                    "type": "string"
+                }
+            }
         }
     },
     "required": [
@@ -101,6 +116,7 @@
         "interval",
         "command",
         "filter",
-        "extract"
+        "extract",
+        "tray"
     ]
 }
