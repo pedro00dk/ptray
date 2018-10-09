@@ -1,0 +1,124 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "JSON Schema for Plugable Tray (ptray) specification files",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "The name of the specification",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 10
+        },
+        "interval": {
+            "description": "The interval in seconds of the execution",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600,
+            "default": 5
+        },
+        "command": {
+            "description": "The command to run, it should provide some output, if the command returns nothing or the error code is not zero, the specification fails",
+            "type": "array",
+            "items": {
+                "description": "Every array element is one part of th command separated by space and without quotes",
+                "type": "string"
+            },
+            "minItems": 1
+        },
+        "filter": {
+            "description": "The strategy (only one should be provided) to filter the result provided by the command, the output of this step is a dict of strings",
+            "type": "object",
+            "properties": {
+                "all": {
+                    "description": "The result will be used entirely as as single string by the next steps, outputs a dict with the 0 key and the entire output as value",
+                    "type": "null"
+                },
+                "lines": {
+                    "description": "Only the received lines will be extracted from the result, outputs a dict with the line indices as key and lines strings as values",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 1
+                },
+                "match": {
+                    "description": "Search for matches in the command output with a python pattern (https://docs.python.org/3/library/re.html), outputs a dict with found order as key and matched strings as values",
+                    "type": "string"
+                }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
+        },
+        "extract": {
+            "description": "Extracts helpful information from the filtered dicts using patterns",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "description": "The index selector, can be a number, a range (can be open on the two sides), or an array of numbers, unselected indices are discarded, at least one index must match, otherwise the specification fails",
+                        "oneOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "from": {
+                                        "description": "Start range index, inclusive",
+                                        "type": "number"
+                                    },
+                                    "to": {
+                                        "description": "End range index, inclusive",
+                                        "type": "number"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "description": "Index to select",
+                                    "type": "number"
+                                }
+                            }
+                        ]
+                    },
+                    "data": {
+                        "description": "The data extractor, can be an array of regular expressions with their labels, a single string pattern with named groups (every group name is a label) or null (the entire line is returned with the data label), if no groups are found, the specification fails",
+                        "oneOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "description": "A label and a regular expression to extract data",
+                                    "type": "object",
+                                    "properties": {
+                                        "label": {
+                                            "description": "The extractor label",
+                                            "type": "string"
+                                        },
+                                        "pattern": {
+                                            "description": "The extractor pattern (groups are ignored)",
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "required": [
+        "name",
+        "command",
+        "filter",
+        "extract"
+    ]
+}
