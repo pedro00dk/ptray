@@ -7,25 +7,15 @@
         "-BM"
     ],
     "filter": {
-        "match": "(?imux-s) ^ /dev/sd[^\\s]+ \\s+ \\d+M \\s+ \\d+M \\s+ \\d+M \\s+ \\d+% \\s+ .+ $"
+        "match": "(?imux) ^ /dev/sd[^\\s]+ .+ $"
     },
     "extract": [
         {
-            "key": {},
-            "data": [
-                {
-                    "label": "drive",
-                    "pattern": "(?imux-s) ^ /dev/sd [^\\s]+"
-                },
-                {
-                    "label": "used",
-                    "pattern": "(?imux-s) \\number %"
-                },
-                {
-                    "label": "mount",
-                    "pattern": "(?imux-s) (?<=\\s) /.*$"
-                }
-            ]
+            "key": {
+                "from": 0,
+                "to": 1000
+            },
+            "data": "(?imux) ^ (?P<drive>[^\\s]+) \\s+ (\\d+) M \\s+ (\\d+) M \\s+ (\\d+) M \\s+ (?P<used>\\d+) % (?P<mount>.*) $"
         }
     ]
 }
