@@ -94,6 +94,12 @@ class Specification:
 
         return extract_function
 
+    def _build_tray_data_function(self):
+        tray = self.spec['tray']
+        icon = tray['icon']
+        icon = tray['info']
+        # TODO
+
     def single_run(self):
         text = self.command_function()
         lines = self.filter_function(text)
