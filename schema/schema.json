@@ -17,7 +17,7 @@
             "default": 5
         },
         "command": {
-            "description": "The command to run, it should provide some output, if the command returns nothing or the error code is not zero, the specification fails",
+            "description": "The command to run, if the result error code is not zero, the specification fails",
             "type": "array",
             "items": {
                 "description": "Every array element is one part of th command separated by space and without quotes",
@@ -26,26 +26,24 @@
             "minItems": 1
         },
         "filter": {
-            "description": "The strategy (only one should be provided) to filter the result provided by the command, the output of this step is a dict of strings",
+            "description": "The strategy to filter the result provided by the command, the output of this step is a dictionary of integer->string",
             "type": "object",
             "properties": {
                 "all": {
-                    "description": "The result will be used entirely as as single string by the next steps, outputs a dict with the 0 key and the entire output as value",
+                    "description": "The result will be used entirely as as single string by the next steps, outputs {0: entire_command_output}",
                     "type": "null"
                 },
                 "lines": {
-                    "description": "Only the received lines will be extracted from the result, outputs a dict with the line indices as key and lines strings as values, if there are missing lines, the specification fails",
+                    "description": "Only the received lines indices will be extracted from the result, outputs {line: command_output_line}, missing lines are ignored",
                     "type": "array",
                     "items": {
-                        "description": "The line indices to select, starting from 0, the indices should ve unique and contained in the command output size, otherwise, the specification fails",
-                        "type": "number",
-                        "minimum": 0
+                        "description": "The line index to select",
+                        "type": "number"
                     },
-                    "minItems": 1,
-                    "uniqueItems": true
+                    "minItems": 1
                 },
                 "match": {
-                    "description": "Search for matches in the command output with a python pattern (https://docs.python.org/3/library/re.html), outputs a dict with found order as key and matched strings as values, if matches nothing, the specification fails",
+                    "description": "Search for a pattern (https://docs.python.org/3/library/re.html) in the result, groups are ignored, outputs {match_order:match_string}",
                     "type": "string"
                 }
             },
@@ -53,16 +51,26 @@
             "maxProperties": 1
         },
         "extract": {
-            "description": "Extracts helpful information from the filtered dicts using patterns",
+            "description": "An array of rules to extract helpful information from the filtered dicts using patterns",
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
                     "key": {
-                        "description": "The index selector, can be a number, a range (can be open on the two sides), or an array of numbers, unselected indices are discarded, at least one index must match, otherwise the specification fails",
+                        "description": "The index selector, can be null (match all), an index, an array of indices or a range (from-to, can be open on the two sides), if some rules are overlapping indices, the latter is persisted",
                         "oneOf": [
                             {
+                                "type": "null"
+                            },
+                            {
                                 "type": "number"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "description": "Index to select",
+                                    "type": "number"
+                                }
                             },
                             {
                                 "type": "object",
@@ -76,23 +84,22 @@
                                         "type": "number"
                                     }
                                 }
-                            },
-                            {
-                                "type": "array",
-                                "items": {
-                                    "description": "Index to select",
-                                    "type": "number"
-                                }
                             }
                         ]
                     },
                     "data": {
-                        "description": "The data extractor, can be an array of regular expressions with their labels, a single string pattern with named groups (every group name is a label) or null (the entire line is returned with the data label), if no groups are found, the specification fails",
+                        "description": "The data extractor, can be null (entire line is returned with data label), a single string pattern with groups (unnamed and named groups are indexed together in the result, being accessible by name or order) or an array of labels and patterns (pattern groups are ignored)",
                         "oneOf": [
+                            {
+                                "type": "null"
+                            },
+                            {
+                                "type": "string"
+                            },
                             {
                                 "type": "array",
                                 "items": {
-                                    "description": "A label and a regular expression to extract data",
+                                    "description": "A label and a pattern to extract data (groups are ignored)",
                                     "type": "object",
                                     "properties": {
                                         "label": {
@@ -100,17 +107,11 @@
                                             "type": "string"
                                         },
                                         "pattern": {
-                                            "description": "The extractor pattern (groups are ignored)",
+                                            "description": "The extractor pattern",
                                             "type": "string"
                                         }
                                     }
                                 }
-                            },
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
                             }
                         ]
                     }
