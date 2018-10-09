@@ -111,8 +111,11 @@
                             }
                         ]
                     }
-                }
-            }
+                },
+                "minProperties": 2,
+                "maxProperties": 2
+            },
+            "minItems": 1
         }
     },
     "required": [

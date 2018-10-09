@@ -1,0 +1,31 @@
+{
+    "$schema": "https://raw.githubusercontent.com/pedro00dk/ptray/master/schema/schema.json",
+    "name": "disk",
+    "interval": 30,
+    "command": [
+        "df",
+        "-BM"
+    ],
+    "filter": {
+        "match": "(?imux-s) ^ /dev/sd[^\\s]+ \\s+ \\d+M \\s+ \\d+M \\s+ \\d+M \\s+ \\d+% \\s+ .+ $"
+    },
+    "extract": [
+        {
+            "key": {},
+            "data": [
+                {
+                    "label": "drive",
+                    "pattern": "(?imux-s) ^ /dev/sd [^\\s]+"
+                },
+                {
+                    "label": "used",
+                    "pattern": "(?imux-s) \\number %"
+                },
+                {
+                    "label": "mount",
+                    "pattern": "(?imux-s) (?<=\\s) /.*$"
+                }
+            ]
+        }
+    ]
+}
