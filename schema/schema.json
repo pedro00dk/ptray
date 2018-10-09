@@ -57,14 +57,8 @@
                 "type": "object",
                 "properties": {
                     "key": {
-                        "description": "The index selector, can be null (match all), an index, an array of indices or a range (from-to, can be open on the two sides), if some rules are overlapping indices, the latter is persisted",
+                        "description": "The index selector, can be an array of indices or a range, if some rules are overlapping indices, the latter is persisted",
                         "oneOf": [
-                            {
-                                "type": "null"
-                            },
-                            {
-                                "type": "number"
-                            },
                             {
                                 "type": "array",
                                 "items": {
@@ -83,37 +77,17 @@
                                         "description": "End range index, inclusive",
                                         "type": "number"
                                     }
-                                }
+                                },
+                                "minProperties": 2,
+                                "maxProperties": 2
                             }
                         ]
                     },
                     "data": {
-                        "description": "The data extractor, can be null (entire line is returned with data label), a single string pattern with groups (unnamed and named groups are indexed together in the result, being accessible by name or order) or an array of labels and patterns (pattern groups are ignored)",
-                        "oneOf": [
-                            {
-                                "type": "null"
-                            },
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "array",
-                                "items": {
-                                    "description": "A label and a pattern to extract data (groups are ignored)",
-                                    "type": "object",
-                                    "properties": {
-                                        "label": {
-                                            "description": "The extractor label",
-                                            "type": "string"
-                                        },
-                                        "pattern": {
-                                            "description": "The extractor pattern",
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            }
-                        ]
+                        "description": "The data extractor, a string pattern with groups (groups are indexed together in the result, being accessible by name or order), the entire match is always available at group 0, mismatches return null to the next step",
+                        "type": "string",
+                        "default": ".*",
+                        "minLength": 1
                     }
                 },
                 "minProperties": 2,
