@@ -120,6 +120,7 @@
     },
     "required": [
         "name",
+        "interval",
         "command",
         "filter",
         "extract"
