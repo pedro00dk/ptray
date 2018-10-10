@@ -23,6 +23,16 @@ class Specification:
     This class validates, verifies and executes the specification files.
     """
 
+    @staticmethod
+    def load_user_specifications():
+        """
+        Get all specifications in the user data folder.
+
+        :return: list[Specification] - the user specifications
+        """
+        specs_data = [path for path in pathlib.Path(config.USER_DATA_PATH).glob('*.json')]
+        return [Specification(spec_data.name[:spec_data.name.rfind('.')]) for spec_data in specs_data]
+
     def __init__(self, spec_data):
         """
         Loads the received specification.
@@ -190,6 +200,10 @@ def test():
     # rewrite first created specification
     new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
     print(new_spec.execution_pipeline())
+
+    # user specifications
+    specifications = Specification.load_user_specifications()
+    print(specifications)
 
 
 if __name__ == '__main__':
