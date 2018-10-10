@@ -1,13 +1,15 @@
 """
-This module implements validation and single run of specifications files
+This module implements serialization, validation and execution of specification files.
 """
-import collections
 import json
 import jsonschema
+import os
 import pathlib
 import re
+import requests
 import subprocess
-from functools import reduce
+
+import config
 
 
 _SCHEMA = json.loads(pathlib.Path('./schema/schema.json').read_text(encoding='utf-8'))
@@ -17,22 +19,63 @@ The specifications schema file loaded as a python object.
 
 
 class Specification:
+    """
+    This class validates, verifies and executes the specification files.
+    """
 
     def __init__(self, spec):
-        self.spec = spec if isinstance(spec, dict) else json.loads(spec)
-        self._validate_spec()
-        self.name = self.spec['name']
-        self.interval = self.spec['interval']
-        self.extract = self.spec['extract']
-        self.command_function = self._build_command_function()
-        self.filter_function = self._build_filter_function()
-        self.extract_function = self._build_extract_function()
+        """
+        Loads the received specification.
+            :param spec: str | dict - The specification string to load from the user data or the dict to create a new
+            specification.
+        """
+        if isinstance(spec, str):
+            self._deserialize(spec)
+        elif isinstance(spec, dict):
+            self.spec = spec
+            self._validate_spec()
+            self._serialize()
+        else:
+            raise TypeError('spec, expected: str | dict')
 
     def _validate_spec(self):
-        try:
-            jsonschema.validate(self.spec, _SCHEMA)
-        except jsonschema.ValidationError as e:
-            raise Exception(f'VALIDATION FAIL. message: {e.message}; cause: {e.cause}')
+        """
+        Validates the current specification against the json schema.
+        """
+        jsonschema.validate(self.spec, _SCHEMA)
+
+    def _serialize(self):
+        """
+        Serializes the specification 
+        """
+        name = self.spec['name']
+        icon = self.spec['tray']['icon']
+        icon_url = requests.utils.urlparse(icon)
+        if icon_url.scheme == '' and re.match(r'^(\w:)?(\\|\/).*', icon_url.path) or icon_url.scheme == 'file':
+            path = pathlib.Path(icon_url.path)
+            if not path.exists():
+                raise FileNotFoundError('icon file not found')
+            icon_content = path.read_bytes()
+        else:
+            response = requests.get(icon)
+            if response.status_code != 200:
+                raise ConnectionError('icon fetch fail')
+            icon_content = response.content
+        spec_path = os.path.join(config.USER_DATA_PATH, f'{name}.json')
+        icon_path = os.path.join(config.USER_DATA_PATH, f'{name}.png')
+        self.spec['tray']['icon'] = icon_path
+        pathlib.Path(spec_path).write_text(json.dumps(self.spec))
+        pathlib.Path(icon_path).write_bytes(icon_content)
+
+    def _deserialize(self, name):
+        """
+        Deserializes the specification file from its name in the user data path.
+        """
+        spec_path = os.path.join(config.USER_DATA_PATH, f'{name}.json')
+        icon_path = os.path.join(config.USER_DATA_PATH, f'{name}.png')
+        if not os.path.exists(spec_path) or not os.path.exists(icon_path):
+            raise FileNotFoundError('spec or icon file not found')
+        self.spec = json.loads(pathlib.Path(spec_path).read_text())
 
     def _build_command_function(self):
         command = self.spec['command']
@@ -108,7 +151,10 @@ class Specification:
 
 
 def test():
-    print(Specification(pathlib.Path('./specs/disk.json').read_text()).single_run())
+    # creation from new spec
+    new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
+    # creation from stored spec
+    stored_spec = Specification('disk')
 
 
 if __name__ == '__main__':
