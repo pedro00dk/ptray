@@ -3,7 +3,6 @@ This module implements serialization, validation and execution of specification 
 """
 import json
 import jsonschema
-import os
 import pathlib
 import re
 import requests
@@ -79,11 +78,12 @@ class Specification:
             if response.status_code != 200:
                 raise ConnectionError('icon fetch fail')
             icon_content = response.content
-        spec_path = os.path.join(config.USER_DATA_PATH, f'{name}.json')
-        icon_path = os.path.join(config.USER_DATA_PATH, f'{name}.png')
-        self.spec['tray']['icon'] = icon_path
-        pathlib.Path(spec_path).write_text(json.dumps(self.spec))
-        pathlib.Path(icon_path).write_bytes(icon_content)
+        spec_path = pathlib.Path(config.USER_DATA_PATH) / f'{name}.json'
+        icon_path = pathlib.Path(config.USER_DATA_PATH) / f'{name}.png'
+        self.spec['tray']['icon'] = icon_path.name
+        spec_path.write_text(json.dumps(self.spec))
+        icon_path.write_bytes(icon_content)
+        self.icon = icon_path.read_bytes()
 
     def _deserialize(self, name):
         """
@@ -91,11 +91,12 @@ class Specification:
 
         :throws: FileNotFoundError - if not find spec or icon file
         """
-        spec_path = os.path.join(config.USER_DATA_PATH, f'{name}.json')
-        icon_path = os.path.join(config.USER_DATA_PATH, f'{name}.png')
-        if not os.path.exists(spec_path) or not os.path.exists(icon_path):
+        spec_path = pathlib.Path(config.USER_DATA_PATH) / f'{name}.json'
+        icon_path = pathlib.Path(config.USER_DATA_PATH) / f'{name}.png'
+        if not spec_path.exists() or not icon_path.exists():
             raise FileNotFoundError('spec or icon file not found')
         self.spec = json.loads(pathlib.Path(spec_path).read_text())
+        self.icon = icon_path.read_bytes()
 
     def _build_execution_pipeline(self):
         """
@@ -204,6 +205,7 @@ def test():
     # user specifications
     specifications = Specification.load_user_specifications()
     print(specifications)
+    [print(len(specification.icon)) for specification in specifications]
 
 
 if __name__ == '__main__':
