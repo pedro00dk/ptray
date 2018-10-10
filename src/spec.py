@@ -153,8 +153,12 @@ class Specification:
 def test():
     # creation from new spec
     new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
+    
     # creation from stored spec
     stored_spec = Specification('disk')
+    
+    # rewrite first created specification
+    new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
 
 
 if __name__ == '__main__':
