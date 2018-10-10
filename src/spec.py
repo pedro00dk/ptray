@@ -23,30 +23,38 @@ class Specification:
     This class validates, verifies and executes the specification files.
     """
 
-    def __init__(self, spec):
+    def __init__(self, spec_data):
         """
         Loads the received specification.
-            :param spec: str | dict - The specification string to load from the user data or the dict to create a new
+
+        :param spec_data: str | dict - The specification string to load from the user data or the dict to create a new
             specification.
         """
-        if isinstance(spec, str):
-            self._deserialize(spec)
-        elif isinstance(spec, dict):
-            self.spec = spec
+        if isinstance(spec_data, str):
+            self._deserialize(spec_data)
+        elif isinstance(spec_data, dict):
+            self.spec = spec_data
             self._validate_spec()
             self._serialize()
         else:
             raise TypeError('spec, expected: str | dict')
 
+        self.execution_pipeline = self._build_execution_pipeline()
+
     def _validate_spec(self):
         """
         Validates the current specification against the json schema.
+
+        :throws: jsonschema.ValidationError - if fails to validate the schema
         """
         jsonschema.validate(self.spec, _SCHEMA)
 
     def _serialize(self):
         """
-        Serializes the specification 
+        Serializes the specification.
+
+        :throws: FileNotFoundError - if not find the icon as a local file
+        :throws: ConnectionError - if fails to fetch the icon from the internet
         """
         name = self.spec['name']
         icon = self.spec['tray']['icon']
@@ -70,6 +78,8 @@ class Specification:
     def _deserialize(self, name):
         """
         Deserializes the specification file from its name in the user data path.
+
+        :throws: FileNotFoundError - if not find spec or icon file
         """
         spec_path = os.path.join(config.USER_DATA_PATH, f'{name}.json')
         icon_path = os.path.join(config.USER_DATA_PATH, f'{name}.png')
@@ -77,30 +87,57 @@ class Specification:
             raise FileNotFoundError('spec or icon file not found')
         self.spec = json.loads(pathlib.Path(spec_path).read_text())
 
-    def _build_command_function(self):
+    def _build_execution_pipeline(self):
+        """
+        Creates a function for running the specification pipeliene
+        """
+        def execution_pipeline():
+            output = self._run_command()
+            filtered = self._filter(output['result'])
+            extracted = self._extract(filtered)
+            return extracted
+
+        return execution_pipeline
+
+    def _run_command(self):
+        """
+        Runs the specification command and returns it's output as string.
+
+        :return: dict - the command status code, result and error
+        """
         command = self.spec['command']
+        result = subprocess.run(command, capture_output=True)
+        return {
+            'code': result.returncode,
+            'result': result.stdout.decode('utf-8'),
+            'error': result.stderr.decode('utf-8')
+        }
 
-        def run_command():
-            result = subprocess.CompletedProcess = subprocess.run(command, capture_output=True)
-            if result.returncode != 0:
-                raise Exception(f'RUN FAIL. command return code is not 0: {result.returncode}')
-            return result.stdout.decode('utf-8')
+    def _filter(self, output):
+        """
+        Filters the command output, returns the filtered data in a dict.
 
-        return run_command
-
-    def _build_filter_function(self):
+        :param output: str - The output of the specification command
+        :return: dict[int -> str] if 'all' was specified, returns a single key 0 and the entire output, if lines was
+            specified, returns the line numbers as keys and the text lines as value, if a match pattern was specified,
+            returns the match order as keys and the matches as values
+        """
         filter_ = self.spec['filter']
         if 'all' in filter_:
-            return lambda text: {0: text}
+            return {0: output}
         elif 'lines' in filter_:
-            lines = set(filter_['lines'])
-            return lambda text: {index: line for line in text.splitlines() if line in lines}
+            return {index: line for line in output.splitlines() if line in set(filter_['lines'])}
         elif 'match' in filter_:
-            pattern = filter_['match']
-            matcher = re.compile(pattern)
-            return lambda text: {index: match.group() for index, match in enumerate(matcher.finditer(text))}
+            return {index: match.group() for index, match in enumerate(re.finditer(filter_['match'], output))}
 
-    def _build_extract_function(self):
+    def _extract(self, filtered):
+        """
+        Extract the information from filtered data, filtering the remaining matched strings in data groups. Keys that
+        matches more than one extractor will be processed by the last matching.
+
+        :param filtered: dict[int -> str] - the filtered command output
+        :return: dict[int -> dict[str -> str]] - the extracted data from the filtered output
+        """
         rules = self.spec['extract']
         extractors = []
         for rule in rules:
@@ -125,17 +162,14 @@ class Specification:
 
             extractors.append({'key_comparer': key_comparer, 'data_extractor': data_extractor})
 
-        def extract_function(lines):
-            extracted_data = {}
-            for index, line in lines.items():
-                matching_extractors = [extractor for extractor in extractors if extractor['key_comparer'](index)]
-                if len(matching_extractors) == 0:
-                    continue
-                extractor = matching_extractors[-1]
-                extracted_data[index] = extractor['data_extractor'](line)
-            return extracted_data
-
-        return extract_function
+        extracted_data = {}
+        for index, line in filtered.items():
+            matching_extractors = [extractor for extractor in extractors if extractor['key_comparer'](index)]
+            if len(matching_extractors) == 0:
+                continue
+            extractor = matching_extractors[-1]
+            extracted_data[index] = extractor['data_extractor'](line)
+        return extracted_data
 
     def _build_tray_data_function(self):
         tray = self.spec['tray']
@@ -143,22 +177,19 @@ class Specification:
         icon = tray['info']
         # TODO
 
-    def single_run(self):
-        text = self.command_function()
-        lines = self.filter_function(text)
-        extracted_data = self.extract_function(lines)
-        return extracted_data
-
 
 def test():
     # creation from new spec
     new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
-    
+    print(new_spec.execution_pipeline())
+
     # creation from stored spec
     stored_spec = Specification('disk')
-    
+    print(stored_spec.execution_pipeline())
+
     # rewrite first created specification
     new_spec = Specification(json.loads(pathlib.Path('./specs/disk.json').read_text()))
+    print(new_spec.execution_pipeline())
 
 
 if __name__ == '__main__':
